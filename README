@@ -1,1 +1,17 @@
 Evergreen Export Application
+
+Usage:
+export.pl [parameters]
+parameters are:
+-d debug 
+-s start TCN
+-f final TCN
+-P pages to export
+-l limit of records to one page (1000 by default)
+-r reset PID(s)
+
+Examples:
+Making export for record with TCN 1254065 as XML with LOC schema
+./export.pl -i 1254065
+Making export for record with TCN 1254065 in OAI
+./export.pl -i 1254065 -O

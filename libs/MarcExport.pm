@@ -21,6 +21,7 @@ sub generate_MARC
 {
     my ($type, $id, $originalmarc, $pids, $PID, $barcodePID, $serialhash, $marc, $date, $editor, $source, $callnumber, $label, $sortkey, $barcode, $DEBUG) = @_;
     my (%originalmarc, %serials, %originalmarc, %PIDs, %text);
+    my $CDEBUG = 0;
 
     %serials = %{$serialhash} if (%$serialhash);
     $originalmarc{$id} = $originalmarc;
@@ -73,7 +74,7 @@ sub generate_MARC
 	if ($barcode=~/^3005/ && !$barcodePID)
 	{
 	    my $command = "/openils/applications/PID-webservice/examples/perl/pid.realtime.pl -i $id -b $barcode";
-	    print "[DEBUG barcodePID] $command\n";
+	    print "[DEBUG barcodePID] $command\n" if ($CDEBUG);
 	    $pidtmp = `$command`;
 	    $barcodepids{$id} = "10622/$barcode";
 	    $barcodePID = $barcode;
@@ -100,7 +101,7 @@ sub generate_MARC
 	{
 	    my $command = "/openils/applications/PID-webservice/examples/perl/pid.realtime.pl -i $id";
 	    my $pidtmp = `$command`;
-	    print "[DEBUG barcode] $command\n";
+	    print "[DEBUG barcode] $command\n" if ($CDEBUG);
 	    if ($pidtmp=~/^(\d+)\s+\=>\s+(\S+)/)
 	    {
 		$PID = $2;

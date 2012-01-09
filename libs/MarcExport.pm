@@ -19,13 +19,14 @@ $VERSION = 1.00;
 
 sub generate_MARC
 {
-    my ($type, $id, $originalmarc, $pids, $PID, $barcodePID, $serialhash, $marc, $date, $editor, $source, $callnumber, $label, $sortkey, $barcode, $DEBUG) = @_;
+    my ($DEBUG, $savelog, $type, $id, $originalmarc, $pids, $PID, $barcodePID, $serialhash, $marc, $date, $editor, $source, $callnumber, $label, $sortkey, $barcode) = @_;
     my (%originalmarc, %serials, %originalmarc, %PIDs, %text);
-    my $CDEBUG = 0;
 
     %serials = %{$serialhash} if (%$serialhash);
     $originalmarc{$id} = $originalmarc;
     $PIDs{$id} = $pids if ($pids);
+    print $savelog "[M1] DEBUG PID $PID\n" if ($DEBUG eq 'savelog');
+    print "D $DEBUG $savelog\n";
 
     if ($id)
     {
@@ -60,7 +61,7 @@ sub generate_MARC
 	$marcrecord = MARC::Record->new_from_xml($marc);
 
         # 852 field 
-        my $locmarc = MARC::Field->new('852','','','a' => 'IISG', 'b' => 'IISG', 'c' => 'IISG', 'j' => $sortkey, 'p' => $barcode);
+        my $locmarc = MARC::Field->new('852','','','a' => 'IISG', 'b' => 'IISG', 'c' => 'IISG', 'j' => $label, 'p' => $barcode);
         $marcrecord->insert_fields_ordered($locmarc);
 
         # 856|u
@@ -74,7 +75,7 @@ sub generate_MARC
 	if ($barcode=~/^3005/ && !$barcodePID)
 	{
 	    my $command = "/openils/applications/PID-webservice/examples/perl/pid.realtime.pl -i $id -b $barcode";
-	    print "[DEBUG barcodePID] $command\n" if ($CDEBUG);
+	    print $savelog "[DEBUG barcodePID] $command\n" if ($DEBUG eq 'savelog');
 	    $pidtmp = `$command`;
 	    $barcodepids{$id} = "10622/$barcode";
 	    $barcodePID = $barcode;
@@ -90,26 +91,27 @@ sub generate_MARC
 	   };
 	}
 
-	# 902|a field
-	if ($PID=~/\d+/ && $PID!~/\/3005\d+/i)
-	{
-            my $pidfield = MARC::Field->new('902','','','a' => $PID);
-            $marcrecord->insert_fields_ordered($pidfield);
-	}
-	# make new PID for images with barcodes
-	elsif (!$PID)
+	# make new PID for images without barcodes
+	if (!$PID)
 	{
 	    my $command = "/openils/applications/PID-webservice/examples/perl/pid.realtime.pl -i $id";
 	    my $pidtmp = `$command`;
-	    print "[DEBUG barcode] $command\n" if ($CDEBUG);
+	    print $savelog "[DEBUG barcode] $command\n" if ($DEBUG eq 'savelog');
 	    if ($pidtmp=~/^(\d+)\s+\=>\s+(\S+)/)
 	    {
 		$PID = $2;
                 my $pidfield = MARC::Field->new('902','','','a' => $PID);
                 $marcrecord->insert_fields_ordered($pidfield);
-		$realtimepids{$id} = $PID;
+		$realtimePIDS{$id} = $PID;
 	    }
 	}
+
+        # 902|a field
+        if ($PID=~/\d+/ && $PID!~/\/3005\d+/i)
+        {
+            my $pidfield = MARC::Field->new('902','','','a' => $PID);
+            $marcrecord->insert_fields_ordered($pidfield);
+        }
 
 	if ($marcpid)
 	{
@@ -163,7 +165,7 @@ sub generate_MARC
 	   $text{$id} = marc_text($type, $originalmarc{$id}, $id, $PIDs{$id});
 	};
 
-	$PIDs{$id} = $PID;
+	$PIDs{$id} = $PID unless ($PIDs{$id});
 	$originalmarc{$id} = $marcrecord unless ($originalmarc{$id});
     }
 
